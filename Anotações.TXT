@@ -1,0 +1,787 @@
+
+
+============ O que aprendi ==================
+
+Conceitos gerais de React
+Biblioteca Babel para converter o codigo para todos os navegadores
+Definição, configuração e uso do Webpack
+Implementação e uso de plugins webpack
+Conceito e uso de source maps
+Configuração de ambientes diferentes da aplicação
+Uso da biblioteca Polished para estilizacao
+Propriedades da API publica do GITHUB
+Instalação, configuração e uso de Styled Components
+Uso da biblioteca Modal react para back-end ficticio
+Conceitos de TypeScript, Hooks e Contexto
+
+
+============ Desafios superados =============
+
+Identificação e conserto de erros:
+ ReactDOM.render is no longer supported in React 18
+ 
+============ O que vou usar =================
+
+Biblioteca Babel para conversão de código
+Controle, melhoria e otimização da aplicação com Webpack
+Utilização de Source Maps para conexão de arquivos de finais com os de saída
+Criação, configuração e emprego de ambientes de aplicação diferentes
+Bibliotecas styled-components, modal react, polished
+Back-end fictício com MirageJs
+Ferramentas do TypeScript
+
+
+=============================================
+                ANOTACOES
+=============================================
+-> Iniciar aplicacao: $yarn start
+
+======= ATALHOS NOVOS =======
+	Excluir todos os comentarios ->
+	*Seleciona as barras *seleciona a linha toda *exclui a linha toda
+	Ctrl + shift + L 	-> 	shift + end 			-> Ctrl + x
+
+|1|===--> CRIANDO ESTRUTURA DO PROJETO <--===|1|
+
+criar package.json:
+$ yarn init -y
+ou 
+$ npm init -y
+
+instalar react:
+$ yarn add react
+
+instalar react dom:
+$ yarn add react-dom
+
+estrutura:
+| past src com index.jsx dentro
+| pasta public (fora de src) , por enquanto somente com o index.html
+
+
+|2|===--> CONFIGURANDO BABEL <--===|2|
+
+instalando babel: 
+$ yarn add @babel/core @babel/cli @babel/preset-env -D
+
+criar babel.config.js dentro de src
+babel.config.js padrao:
+module.exports = {
+    presets: [
+        '@babel/preset-env'
+		// preset-env é uma extensao que detecta o ambiente 
+		// e converte somente as funcionalidades necessarias para o local
+    ]
+}
+
+mostrar comandos do babel: 
+$ yarn babel -h
+
+converter arquivo babel: (fazer sempre que tiver alteracao)
+		   //arq input  //arq output //pasta distribution com bundle.js (nome convencional)
+$ yarn babel src/index.jsx --out-file dist/bundle.js
+
+!! instalar preset do react para o babel funcionar
+$ yarn add @babel/preset-react -D
+! importar em babel.config.js:
+module.exports = {
+    presets: [
+        '@babel/preset-react'
+    ]
+}
+
+|2|===--> CONFIGURANDO WEBPACK <--===|2|
+
+O WebPack transforma arquivos com dependencias em arquivos com uso padrao e geral
+Ex: .SASS => WEBPACK => .CSS
+
+instalar webpack:
+$ yarn add webpack webpack-cli -D
+
+criar webpack.config.js (fora da src)
+(nao convencional)
+webpack.config.js:
+(!nao use esse formato, continue lendo!)
+// entry: arquivo principal da aplicacao
+module.exports = {
+    entry: 'src/index.jsx'
+}
+
+porem por conta de diferencas entre sistemas operacionais (principalmente 
+para acesso de arquivos com '/'), usaremos o seguinte padrao:
+
+instalar babel-loader, que sera usado a seguir:
+$ yarn add babel-loader -D
+
+(convencional)
+webpack.config.js:
+// temos que usar require pois webpack roda dentro do node, que so importa itens com require
+const path = require('path');
+
+
+module.exports = {
+	// __dirname vai pegar o diretorio do arquivo em que foi executado
+    entry: path.resolve(__dirname, 'src', 'index.jsx'),
+	// a virgula sera substituida pela / adequada de cada sistema operacional
+	// entao esse codigo seria equivalente a: __dirname/src/index.jsx
+	
+	// definir arquivo a ser gerado com o webpack
+	output: {
+		// o nome do arquivo a ser gerado sera declarado na linha posterior a esta:
+		path: path.resolve(__dirname, 'dist'),
+		// definir arquivo a ser gerado
+		filename: 'bundle.js'
+	},
+	// definir extensoes de arquivos que podem ser lidas (le somente .js por padrao) !nao esquecer dos pontos!
+	resolve: {
+        extensions: ['.js', '.jsx'],
+    },
+	// define como a aplicacao vai se comportar quando estiver importando cada tipo de arquivo
+	// ex: define regras para arquivos css, js, js...
+	
+    module: {
+        rules: [
+            {
+				// verifica se arquivo é .jsx ( a \ vem antes do . pois o . significa qualquer caractere, a \ realiza o scape)
+                // $ = o arquivo deve TERMINAR com isso
+				test: /\.jsx$/,
+				// exclue esses arquivos pois node_modules sao traduzidos para o web ler,
+				// porem agora vira resposabilidade da biblioteca que estamos utilizando
+                exclude: /node_modules/,
+				// integracao entre babel e webpack
+				use: 'babel-loader',
+            }
+        ]
+    }	
+}
+
+|3|===--> ESTRUTURA DO REACTJS <--===|3|
+
+criar elemento div#root dentro do body, em index.html
+antes do fechamento do body, importe o script bundle.js ( <script src="../dist/bundle.js"></script> )
+
+em index.jsx:
+	import React from 'react';
+	import { render } from 'react-dom';
+	render(<h1>Exemplo</h1>, document.getElementById('root'));
+
+executar webpack novamente:
+$ yarn webpack
+
+remover a necessidade de <import React from 'react'> usando babel:
+ir em babel.config.js:
+mudar -> '@babel/preset-react'
+para  ->['@babel/preset-react', {
+            runtime: 'automatic'
+        }]
+
+! nao esqueca de rodar $ yarn webpack para aplicar alteracoes
+
+provavelmente tera um aviso, pedindo definicao de modo de uso do webpack (development ou production),
+development: usado enquanto se desenvolve a aplicacao, rapido
+production: mais lento, realiza os toques finais da aplicacao para enviar para producao
+
+para definir o modo, va em webpack.config.js dentro de module.exports e defina:
+	// para desenvolvimento:
+	mode: 'development',
+	// para producao:
+	mode: 'production',
+	
+|4|===--> SERVINDO HTML ESTATICO <--===|4|	
+
+para evitar problemas com a declarao do script principal da aplicacao, 
+usaremos um plugin webpack para injetar o script direto no html
+
+-> remover </script> previamente declarado em index.html
+instalar plugin de injecao de script do webpack:
+$ yarn add html-webpack-plugin -D
+
+importar o plugin webpack:
+webpack.config.js:
+	const HtmlWebpackPlugin = require('html-webpack-plugin')
+	
+	module.exports = {
+		xxxx = 'xxxx',
+		// instalar logo apos o resolve
+		plugins: [
+			new HtmlWebpackPlugin({
+				// define arquivo de template para gerar o HTML
+				template: path.resolve(__dirname, 'public', 'index.html')
+			})
+		],
+	}
+
+rodar $yarn webpack para atualizar o arquivo	
+
+isso ira criar um index.html dentro do dist, e o script sera declarado na <head>,
+quando os scripts sao declarados dentro da <head>  eles são carregados antes do
+conteúdo e podem bloquear o render da página, e no body ele é carregado junto 
+com o conteúdo da página.
+Porem com este plugin o script sera gerado com a tag defer, que ira fazer o navegador
+nao esperar pelo script, e so roda-lo depois que o DOM for totalmente construido 
+(a tag async so fara com que o script seja totalmente independente, nao ira bloquear
+o carregamento porem outros scripts nao vao esperar o async e nem o async ira esperar
+por eles)
+
+!agora usamos o index.html dentro do bundle para verificar nossa aplicacao!
+
+Executa a funcao $ yarn webpack automaticamente a cada mudanca
+
+instalar webpack dev server
+$ yarn add webpack-dev-server -D
+
+declarar em webpack.config.js:
+module.exports = {
+	xxxx: 'xxxx',
+    devServer: {
+		// static usado no lugar de contentBase pois gera erro atualmente
+        static: path.resolve(__dirname, 'public')
+    },
+}
+
+e depois iniciar/executar o webpack dev server:
+$ yarn webpack serve
+
+|6|===--> UTILIZANDO SOURCE MAPS <--===|6|
+Source maps são arquivos especiais que conectam
+o arquivo final de saída que o navegador está realmente
+usando aos arquivos criados com os quais você realmente
+trabalha e escreve o código no seu sistema de arquivos.
+Deixa mais claro mensagem de erro por exemplo, existem
+diversos source maps com funcoes e caracteristicas diferentes.
+
+webpack.config.js:
+// declarar logo apos mode
+module.exports = {
+	mode: 'development',
+	// esse source map demonstra melhor mensagens de erro
+	devtool: 'eval-source-map',
+	xxxx: 'xxxxx',
+}
+
+nao esqueca de rodar $ yarn webpack serve  novamente para atualizar os dados alterados do webpack
+
+podemos observar o erro no console, e clicar na linha logo abaixo dele para visualizar o codigo ( caso 
+esteja usando esta mesma devtool)
+
+
+|7|===--> AMBIENTES DE DESENVOLVIMENTO <--===|7|
+
+Dentro dos codigos JavaScript existem variaveis chamadas variaveis ambiente que sao variaveis para configurar
+algo de acordo com o ambiente da sua aplicacao.
+NODE_ENV é uma variavelutilizada pppara iodentificar se o ambiente que esta sendo executada a aplicacao é 
+de desenvolvimento ou producao. 
+
+!NODE_ENV deve ser criada por nos!
+
+Configurando ambiente com node_env:
+
+webpack.config.js:
+	
+	// caso node_env nao seja de producao, isDevelopment = true
+	const isDevelopment = process.env.NODE_ENV !== 'production'
+	
+	module.exports = {
+	
+	// caso desenvolvimento torne ambiente em 'development', caso contrario torne-o 'production'
+	mode: isDevelopment ? 'development' : 'production',
+	
+	// faremos o mesmo em devTool
+	// source-map sera usado em producao pois sera gerado com mais detalhes
+	
+	devtool: isDevelopment ? 'eval-source-map' : 'source-map',
+	xxxx: "xxxxx"	
+	
+	}
+
+Criando a variavel ambiente:
+Linux/Mac: 
+	$ NODE_ENV=production yarn webpack	
+Windows:
+	Em windows iremos precisar de uma dependencia que define variaveis ambiente independentemente do
+	sistema operacional: (cross-env)
+	$ yarn add cross-env -D
+	
+Criando um script em package.json, acima das dependencias:	
+{
+	"xx": "xxx",
+	"scripts": {
+		// script de ambiente de desenvolvimento
+		"dev": "webpack serve",
+		// script de ambiente de producao
+		"build": "cross-env NODE_ENV=production webpack"
+	},
+	"dependencies": {
+	"xxx": "xxxx"
+	}
+}
+
+ao inves de usarmos agora $ yarn webpack serve, usaremos:
+	para ambiente de desenvolvimento:
+	$ yarn dev 
+	e para ambiente de produção:
+	$ yarn build
+
+|8|===--> IMPORTANDO CSS <--===|8|
+
+Na maioria das bibliotecas front-end, importamos o CSS por dentro do javascript em si.
+
+criar, em src:
+	pasta styles -> global.css
+
+Iremos usar 2 loaders para isso, execute:
+// Importante usar os dois, visto que trabalham em conjunto
+$ yarn add style-loader -D 
+$ yarn add css-loader -D
+
+- Pode ser usado $yarn addstyle-loader css-loader -D
+- para instalar os dois de uma vez
+
+Criando uma regra para ler arquivos css,
+webpack.config.js:
+module.exports = {
+	xxxx: xxxx,
+	// Definiremos a leitura junto com a area de leitura de .jsx
+    module: {
+        rules: [
+            {
+				test: /\.jsx$/,
+                exclude: /node_modules/,
+				use: 'babel-loader',
+            },
+			// Declarando:
+            {
+				test: /\.css$/,
+                exclude: /node_modules/,
+				// Aqui usaremos um array para definir duas dependecias de uma vez so 
+				use: ['style-loader', 'css-loader']
+            }
+        ],
+    }
+};
+
+Importando CSS no App:
+App.jsx:
+import './styles/global.css';
+
+|9|===--> USANDO SASS <3 <--===|9|
+SASS = “Syntactically Awesome Style Sheets”
+
+SASS é um pré-processador de css, a sua ideia é adicionar recursos especiais
+como variáveis, mixins, funções e operações e outras opções variadas.
+Ranking pessoal de funcoes do SASS: 
+	Sintaxe aninhada de css,
+	Mixins (funcoes, uso para declarar flex, animacoes e responsividade) ,
+	Declaracao simplificada de variaveis,
+	Possibilidade de divisao de folhas de estilo
+
+Instalando SASS (IMPORTANTE INSTALAR O NODE-SASS AO INVES DE SASS)
+$ yarn add node-sass -D
+// Instalamos um loader de SASS do webpack para a aplicacao entender arquivos sass
+$ yarn add sass-loader -D
+
+em webpack.config.js, na mesma area em  que declaramos a leitura do CSS, vamos muda-lo:
+	mudamos:
+	{
+		test: /\.css$/,
+		exclude: /node_modules/,
+		use: ['style-loader', 'css-loader'],
+	}
+	
+	!!! NAO ESQUECA DE IMPORTAR O 'sass-loader' !!!
+	para: 
+
+	{
+		test: /\.scss$/,
+		exclude: /node_modules/,
+		use: ['style-loader', 'css-loader', 'sass-loader'],
+	}
+	
+trocamos entao o nome global.css para global.scss , o seu import em App.jsx tambem
+
+
+|X| ====--|)> ERROS <(|--==== |X|
+
+ReactDOM.render is no longer supported in React 18:
+
+
+App.jsx antigo: (Causador do erro)
+	import { render } from 'react-dom';
+	import { App } from './App.jsx'
+
+	render(<App/>,document.getElementById('root'))
+	
+App.jsx novo: (Arruma o erro)
+	import React from "react";
+	import ReactDOM from "react-dom/client";
+	import { App } from './App.jsx';
+
+	const root = ReactDOM.createRoot(document.getElementById("root"));
+	root.render(
+		<App />
+	);
+
+============ CONCEITOS IMPORTANTES ===========
+
+|10|===--> CRIANDO PRIMEIRO COMPONENTE <--===|10|
+
+Criar pasta components em src -> RepositoryList.jsx
+criar componente (video)
+
+em App.jsx:
+
+import { RepositoryList } from './components/RepositoryList';
+
+...App(){
+return <RepositoryList />
+}
+
+|11|===--> PROPRIEDADES NO REACT <--===|11|
+-- Anotacaoes serao menos informativas a partir daqui
+
+Quando algo se repete dentro da aplicacao, criamos um componente para encapsular aquilo.
+
+Usamos props para comunicao entre componentes
+
+Usando arrays para retornar variaveis: (acima de return, dentro da funcao)
+	const arraydeinfos = {
+		name: 'unform',
+		description: 'Forms in react',
+		link: 'https://link.com'
+	}
+
+Usando um valor padrao para uma prop caso ela esteja vazia;
+	exs: 
+	1)	{props.info ?? "Info esta vazia!"}
+	2) {props.arraydeinfos?.name ?? "Informacao vazia!"}
+
+|12|===--> ESTADO DO COMPONENTE <--===|12|	
+
+Use state:
+
+import { useState } from "react";
+
+...Counter(){
+ const [counter, setCounter] = useState(0);
+ function increment(){
+	setCounter( counter + 1 )
+ }
+ ...
+}
+
+|13|===--> IMUTABILIDADE NO REACT <--===|13|	
+
+Quando formos adicionar um item em um array por exemplo, criamos
+um array novo, pegamos o valor do antigo e adicionamos a informacao
+nova nesse novo array.
+
+Entao, so precisamos mudar o ponteiro do primeiro array para o novo.
+
+
+|14|===--> FAST REFRESH NO WEBPACK <--===|14|	
+
+Quando atualizamos algo na aplicao, ela reseta todos os dados para os padroes,
+agora imagine que precisamos testar um carrinho de compras, com diversos itens dentro,
+porem toda vez que algo e atualizado o carrinho é zerado.
+Para evitar este problema, usaremos o webpack fast refresh
+
+Instalacao;
+	Procure react-refresh-webpack-plugin para instrucoes
+	// ou use esse comando, que pode estar desatualizado:
+	// yarn add -D @pmmmwh/react-refresh-webpack-plugin react-refresh
+
+Temos que importa-lo:
+	webpack.config.js: 
+	const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin')
+	
+	// Adicionaremos o plugin somente em modo de DESENVOLVIMENTO:
+	plugins: [
+		isDevelopment && new ReactRefreshWebpackPlugin(),
+		// caso nao esteja em desenvolvimento, a linha acima retornara false ,
+		// gerando um erro pois nao e um valor de plugin valido
+		// usaremos entao um filtro para remover esse valor e evitar erros:
+	].filter(Boolean),
+	
+mudaremos tambem em webpack.config.js: 
+
+	devServer: {
+		xxx: xxx,
+		hot: true,
+	}
+
+e trocaremos em module: rules ->
+	use: 'babel-loader',	
+	
+para: 
+	use: {
+		loader: 'babel-loader',
+		options: {
+			plugins: [
+				isDevelopment && require.resolve('react-refresh/babel')
+			].filter(Boolean)
+		}
+	}
+
+Paramos entao o webpack, e usamos yarn dev novamente
+Agora podemos alterar valores sem reiniciar a aplicacao inteira,
+tornando-a tambem mais veloz!	
+
+|15|===--> UTILIZANDO O USEEFFECT <--===|15|	
+
+useEffect -> dispara uma funcao quando algo que acontece na aplicacao,
+como por exemplo mudanca de uma variavel.
+Recebe dois parametros, 1-> qual funcao executar 2-> QUANDO executar essa funcao
+  useEffect(() => {
+  },[arrayDeDependencias] )
+! Caso o array de dependecias estiver vazio o useEffect ira executar somente uma vez 
+! pois nao tem nada que ira altera-lo !
+!!!! SE NAO FOR COLOCADO OS COLCHETES DE UM ARRAY, O USE EFFECT ENTRARA EM LOOP !!!!	
+! se o primeiro parametro alterar o segundo parametro, ele entrara em loop tambem !											
+  
+
+Usaremos a api do github para receber repositorios da rocketseat:
+	https://api.github.com/orgs/rocketseat/repos
+
+* sempre bom iniciar um estado com o mesmo tipo da const, ex:
+// const array, usestate array tambem
+	const [] = useState([])
+
+usando useState em conjunto com API
+
+Padrao de uso 
+  useEffect(() => {
+	// pegar informacoes da api
+    fetch('linkdaapi.com')
+	// transformar a resposta em json
+    .then(response => response.json())
+	// exibir todos os dados do repositorio
+    .then(data => console.log(data))
+	// ou armazenar o dado em uma const desejada
+	.then(data => setRepositories(data))
+  },[] )
+
+! toda vez que algum dadao e atualizado a funcao principal sera executada novamente,
+! podendo gerar carga desnecessaria, mais informacoes posteriormente
+  
+|16|===--> LISTANDO REPOSITORIOS <--===|16|	 
+
+Mapeamento de repositorios, e exibicao de todos os encontrados:
+	<ul>
+		{repositories.map(repository => {
+		  return <RepositoryItem repository={repository}/>
+		})}
+	</ul>
+
+! precisamos informar para cada filho, uma chave! ex ->
+	...
+	return <RepositoryItem key={repository.name} repository={repository}/>
+	...
+	
+|17|===--> FUNDAMENTOS DO TYPESCRIPT <--===|17|	 	
+
+Por meio dele é possível definir a tipagem estática, parâmetros e retorno de funções.
+ex: 
+// Nesse exemplo o TypeScript ira realizar o autoComplete dos valores necessarios, e tambem
+// informar caso algum valor esteja declarado erroneamente
+
+// definindo TypeScript
+type User = {
+	name: string
+	address: {
+		city: string
+		// ?: significa que nao é um valor obrigatorio
+		state?: string
+	}
+}
+// Declaramos que user devera seguir as propriedades de User, usando : para isso
+function welcomeMessage(user: User) {
+	return 'Welcome ${user.name}, your city: ${user.address.city}, your state: ${user.address.city}'
+}
+// chamando a funcao, o TS ira avisar caso algum valor esteja declarado errado
+welcomeMessage({
+		name: 'Vitin',
+		address: {
+			city; 'Samas',
+			state: 'PR'
+		}
+	}
+)
+
+|18|===--> TYPESCRIPT NO REACTJS <--===|18|	
+
+Instalando typescript no projeto:
+	$ yarn add typescript -D
+
+Inicializando o typescript na aplicacao: 
+	$ yarn tsc --init
+Esse comando ira criar um arquivo chamado tsconfig.json	
+Do video->
+tsconfig.js:
+{
+  "compilerOptions": {
+    "lib": ["dom", "DOM.Iterable", "esnext"],
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
+
+Instalar biblioteca babel para entender typescript:
+	$ yarn add @babel/preset-typescript -D
+
+Depois vamos em babel.config.js e adicionamos em presets:
+module.exports = {
+    presets: [
+        'xx: xxx',
+		// Linha adicionada:
+        '@babel/preset-typescript',       
+    ]
+}
+
+Depois em webpack.config.js definiremos que o arquivo pode ser .jsx OU .tsx:
+trocamos:
+	test: /\.jsx$/,
+por:
+	test: /\.(j|t)sx$/,
+e em resolve -> extensions adicionaremos '.ts' e '.tsx'	ao array
+
+e em entry:
+trocamos: 
+	entry: path.resolve(__dirname, 'src', 'index.jsx'),
+por:
+	entry: path.resolve(__dirname, 'src', 'index.tsx'),
+	
+E entao renomearemos o index.jsx para index.tsx (dentro da pasta src)	
+precisamos adaptar o index para o typescrit entende-lo, use:
+	$ yarn add @types/react-dom -D
+e tambem usaremos:
+	$ yarn add @types/react -D	
+	
+|19|===--> COMPONENTES COM TYPESCRIPT <--===|19|	
+
+! Evitar a todo custo o tipo never !
+Convertemos App.jsx em App.tsx
+Depois RepositoryItem.jsx para RepositoryItem.tsx,
+iremos entao transformar o conteudo do RepositoryItem para funcionar com tsx
+So tiparemos as informacoes que usamos na aplicacao, nao sera necessario tipar todas.
+
+1- erro: (props) recebe valor any
+Faremos a tipagem dos dados desse componente utilizando interfaces,
+convencionalmente a sintaxe da tipagem segue a regra: interface NomeDoComponenteProps {...}
+
+-> Tipagem do props
+(props: RepositoryItemProps)
+
+E entao RepositoryList.jsx para RepositoryList.tsx
+
+interface Repository {
+  name: string;
+  description: string;
+  html_url: string;
+}
+
+export function RepositoryList() {
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  ....
+}
+|==|============| CAPITULO II |============|==|
+|20|===--> ESTRUTURA REACT APP <--===|20|	
+
+Criaremos um app usando a template de typescript
+	$ yarn create react-app appname --template typescript
+
+- Limpar projeto
+deletar tudo de public menos index.html, limpar comentarios do index
+em src, deletar arquivos de imagens e css (deixar basicamente app,index e reactappenv)
+- remover importacoes de arquivos nao mais existentes
+- limpar tudo de app exceto div, usar export function e remover export default
+(export default deixa quem importa modificar seu nome, agora se usarmos export 
+function quem recebe precisa declarar o nome exportado. Usaremos entao export 
+function pra evitar erros de duplicacao, ajuda tambem no autoimport do react)
+
+As configuracoes, como a da babel por exemplo, fica dentro de node_modules em react-scripts
+(O script eject ira jogar todos esses arquivos para a raiz do projeto, nao recomendado)
+
+|21|===--> CONFIGURANDO STYLED COMPONENTS <--===|21|	
+Styled components é uma biblioteca que possibilita escrever códigos CSS dentro do JavaScript,
+sua grande vantagem é deixar a sua estilização somente dentro do escopo do componente que ela
+altera.
+
+$ yarn add styled-components
+
+em app.tsx:
+	import styled from 'styled-components'
+	
+caso de erro instale a dependecia que ele pede, no meu caso foi: 
+	$ yarn add @types/styled-components -D
+	
+Criando h1 estilizado	
+App.tsx: (acima da funcao de export)
+const Title = styled.h1`
+  font-size: 64px;
+  color: #8257e6;
+`
+
+renderizamos entao, <Title>Hello World!</Title> ao inves de h1
+
+para iniciar, usamos: 
+	$ yarn start
+
+|22|===--> ESTILOS GLOBAIS <--===|22|	
+
+- Inicio da criacao do projeto, reducao de anotacoes	
+
+Criar em src -> styles/global.ts (nao sera tsx)
+
+globals.ts:
+import { createGlobalStyle } from 'styled-components'
+
+export const GlobalStyle = createGlobalStyle`
+	itemglobal {
+		propriedades: aqui
+	}
+	// *** !!PROPRIEDADES HTML PARA MELHOR RESPONSIVIDADE:!! ***
+	html {
+    @media (max-width: 1080px) {
+      font-size: 93.75%;
+    }
+    @media (max-width: 720px) {
+      font-size: 87.5%;
+    }
+  }
+`
+|--|==--==     CONSUMINDO API     ==--==|--|	
+|23|===--> FRONT-END SEM BACK-END <--===|23|	
+
+Para criar um back-end ficticio podemos usar, por exemplo:
+	• JSON server
+	• Miragejs (que iremos utilizar)
+
+instalar mirage: 
+		$ yarn add miragejs
+instalar axios	
+		$ yarn add axios	
+		
+|--|==--==     MODAL E FORMS     ==--==|--|
+|24|===--> CONFIGURAR MODAL <--===|24|		
+Usaremos uma biblioteca react para criar modais
+$ yarn add react-modal
+
+link: https://github.com/reactjs/react-modal
+
+|25|===--> RESTO DE ANOTACOES <--===|25|	
+
+Biblioteca polished para modificar as cores
+	$ yarn add polished
+
+-Rever: 
+	•Inserindo transação na API
