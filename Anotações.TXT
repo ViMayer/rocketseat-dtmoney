@@ -1,4 +1,7 @@
 
+-> Iniciar aplicacao: 
+	$ yarn install
+	$ yarn start
 
 ============ O que aprendi ==================
 
@@ -34,7 +37,6 @@ Ferramentas do TypeScript
 =============================================
                 ANOTACOES
 =============================================
--> Iniciar aplicacao: $yarn start
 
 ======= ATALHOS NOVOS =======
 	Excluir todos os comentarios ->
